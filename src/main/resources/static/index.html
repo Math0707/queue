@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Fila Inteligente — Painel</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/css/panel.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="site-header__inner">
+        <h1>Fila Inteligente</h1>
+        <p>Painel simples para incluir pedidos, ver a fila e chamar o próximo atendimento.</p>
+        <nav class="site-header__links">
+          <a href="/swagger-ui.html">Abrir documentação técnica (Swagger)</a>
+          <a href="/h2">Console do banco (desenvolvimento)</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <section class="card">
+        <h2><span class="emoji" aria-hidden="true">➕</span> Nova solicitação</h2>
+        <div id="form-flash" class="flash" hidden></div>
+        <form id="new-task-form">
+          <label for="field-description">O que a pessoa precisa?</label>
+          <textarea
+            id="field-description"
+            name="description"
+            placeholder="Ex.: Ana Costa — documento com corretor"
+            required
+          ></textarea>
+
+          <label for="field-priority">Quão urgente é?</label>
+          <select id="field-priority" name="priority" required>
+            <option value="LOW">Baixa — pode esperar mais</option>
+            <option value="MEDIUM" selected>Média — situação comum</option>
+            <option value="HIGH">Alta — precisa de prioridade</option>
+          </select>
+
+          <label for="field-scheduled">Agendar para depois (opcional)</label>
+          <input type="datetime-local" id="field-scheduled" name="scheduledFor" />
+          <p class="hint">Se deixar em branco, entra na fila de chamada assim que possível.</p>
+
+          <button type="submit" class="btn btn--primary">Colocar na fila</button>
+        </form>
+      </section>
+
+      <section class="card">
+        <h2><span class="emoji" aria-hidden="true">📋</span> Quem está esperando agora</h2>
+        <p class="hint" style="margin-top: -0.5rem">
+          Ordem automática: alta prioridade primeiro; na mesma urgência, quem chegou antes. Só aparece quem já pode ser atendido (hora do agendamento já passou, se houver).
+        </p>
+        <div id="queue-flash" class="flash" hidden></div>
+        <div class="btn-row" style="margin-bottom: 1rem">
+          <button type="button" class="btn btn--secondary" id="btn-refresh-queue">Atualizar lista</button>
+        </div>
+        <div id="queue-list"></div>
+      </section>
+
+      <section class="card card--wide">
+        <h2><span class="emoji" aria-hidden="true">📢</span> Atendimento</h2>
+        <div id="action-flash" class="flash" hidden></div>
+        <div class="btn-row" style="margin-bottom: 1.25rem">
+          <button type="button" class="btn btn--primary" id="btn-claim">Chamar próximo da fila</button>
+        </div>
+        <div class="inline-fields">
+          <div class="field field-grow">
+            <label for="field-complete-id">Encerrar chamado (número)</label>
+            <input type="text" id="field-complete-id" inputmode="numeric" placeholder="Ex.: 3" />
+          </div>
+          <div class="field" style="align-self: flex-end">
+            <button type="button" class="btn btn--ghost" id="btn-complete">Marcar como concluído</button>
+          </div>
+        </div>
+        <p class="hint">Use “Chamar próximo” para preencher o número automaticamente, ou digite o número se já souber.</p>
+      </section>
+
+      <section class="card card--wide">
+        <h2><span class="emoji" aria-hidden="true">📑</span> Todas as solicitações</h2>
+        <p class="hint" style="margin-top: -0.5rem">
+          Inclui agendados para mais tarde, em atendimento e já concluídos — útil para conferência.
+        </p>
+        <div id="all-tasks"></div>
+      </section>
+    </main>
+
+    <script src="/js/panel.js"></script>
+  </body>
+</html>
