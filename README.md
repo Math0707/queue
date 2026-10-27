@@ -1,49 +1,31 @@
 ## Queue Manager (Fila Inteligente)
 
-Backend (API REST) para gerenciamento de filas com **prioridade**, **status** e **agendamento**. Inclui **painel web** em português, **Swagger**, perfis **dev** (H2) e **prod** (PostgreSQL), **Docker** e **CI no GitHub**.
+[![CI](https://github.com/Math0707/queue/actions/workflows/ci.yml/badge.svg)](https://github.com/Math0707/queue/actions/workflows/ci.yml)
+
+Backend (API REST) para gerenciamento de filas com **prioridade**, **status** e **agendamento**. Inclui **painel web** em português, **Swagger**, perfis **dev** (H2) e **prod** (PostgreSQL), **Docker Compose** e **CI no GitHub Actions**.
 
 ### Stack
 
 - Java 21
 - Spring Boot 3.5.x
 - Spring Web + Spring Data JPA + Validation
-- Banco: **H2** (desenvolvimento) ou **PostgreSQL** (Docker/produção)
+- Banco: **H2** (desenvolvimento/testes) ou **PostgreSQL** (Docker/produção)
+- JUnit 5 + Mockito + MockMvc
 - Maven Wrapper (`mvnw`)
 
-### Clonar e subir no GitHub
+### Regras da fila
 
-Na pasta do projeto:
-
-```powershell
-git init
-git branch -M main
-git add .
-git commit -m "Initial commit: API, painel, Docker e CI"
-```
-
-Crie um repositório vazio no GitHub e conecte:
-
-```powershell
-git remote add origin https://github.com/SEU_USUARIO/SEU_REPO.git
-git push -u origin main
-```
-
-O workflow **CI** (`.github/workflows/ci.yml`) roda `mvn verify` em cada push/PR para `main` ou `master`.
-
-### Perfis Spring
-
-| Perfil | Uso | Banco |
-|--------|-----|--------|
-| `dev` (padrão) | `mvn spring-boot:run` local | H2 em memória + console `/h2` |
-| `prod` | Docker ou servidor | PostgreSQL (`SPRING_DATASOURCE_*`) |
-
-Arquivos: `application.properties` (comum), `application-dev.properties`, `application-prod.properties`.
+- Ordem de atendimento: **prioridade** (`HIGH` > `MEDIUM` > `LOW`); empate → **ordem de chegada** (FIFO).
+- Solicitação com `scheduledFor` no futuro não aparece na fila até o horário chegar.
+- Ciclo de vida: `PENDING` → (`POST /queue/claim`) → `PROCESSING` → (`POST /tasks/{id}/complete`) → `DONE`.
+- Só é possível concluir quem está em `PROCESSING` (senão `409 Conflict`).
 
 ### Rodar local (Windows)
 
-- **JDK 21** e **JAVA_HOME** configurados ([instalação com winget](https://learn.microsoft.com/windows/package-manager/winget/) — pacote `Microsoft.OpenJDK.21`).
+Pré-requisito: **JDK 21** com **JAVA_HOME** configurado ([winget](https://learn.microsoft.com/windows/package-manager/winget/) — pacote `Microsoft.OpenJDK.21`).
 
 ```powershell
+git clone https://github.com/Math0707/queue.git
 cd queue
 .\mvnw.cmd spring-boot:run
 ```
@@ -52,11 +34,29 @@ cd queue
 - **Swagger:** `http://localhost:8080/swagger-ui.html`
 - **H2 (só dev):** `http://localhost:8080/h2` — JDBC `jdbc:h2:mem:queue`, user `sa`, senha vazia.
 
-Perfil explícito:
+### Testes
 
 ```powershell
-.\mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=dev"
+.\mvnw.cmd verify
 ```
+
+| Classe | Tipo | O que cobre |
+|--------|------|-------------|
+| `QueueServiceTest` | Unitário (Mockito) | Ordenação por prioridade, FIFO, agendamento, `claim` |
+| `TaskServiceTest` | Unitário (Mockito) | Criação, conclusão e transições de status inválidas |
+| `QueueApiIntegrationTest` | Integração (MockMvc + H2) | Fluxo HTTP completo, validação (400), conflito (409), fila vazia (404) |
+| `QueueApplicationTests` | Smoke | Contexto do Spring sobe |
+
+O workflow **CI** (`.github/workflows/ci.yml`) roda `./mvnw verify` em cada push/PR para `main` ou `master`.
+
+### Perfis Spring
+
+| Perfil | Uso | Banco |
+|--------|-----|--------|
+| `dev` (padrão) | `mvnw spring-boot:run` local e testes | H2 em memória + console `/h2` |
+| `prod` | Docker ou servidor | PostgreSQL (`SPRING_DATASOURCE_*`) |
+
+Arquivos: `application.properties` (comum), `application-dev.properties`, `application-prod.properties`.
 
 Produção local com Postgres já rodando:
 
@@ -70,23 +70,29 @@ $env:SPRING_DATASOURCE_PASSWORD="queue"
 
 ### Docker (API + PostgreSQL)
 
-Na **raiz** do repositório (onde está `docker-compose.yml`):
+Na raiz do repositório:
 
 ```powershell
 docker compose up --build
 ```
 
-A API fica em `http://localhost:8080` com perfil `prod` e dados persistentes no volume `pgdata`.
+A API sobe em `http://localhost:8080` com perfil `prod`, esperando o Postgres ficar saudável. Os dados ficam no volume `pgdata` (`docker compose down -v` apaga).
 
 ### Porta 8080 em uso
 
 1. `netstat -ano | findstr :8080` → `taskkill /PID <pid> /F`
 2. Ou `.\mvnw.cmd spring-boot:run "-Dspring-boot.run.jvmArguments=-Dserver.port=8081"`
 
-### Endpoints (resumo)
+### Endpoints
 
-**Solicitações:** `POST /tasks`, `GET /tasks`, `POST /tasks/{id}/complete`  
-**Fila:** `GET /queue`, `GET /queue/next`, `POST /queue/claim`
+| Método | Rota | Descrição | Respostas |
+|--------|------|-----------|-----------|
+| `POST` | `/tasks` | Cria solicitação | 200, 400 |
+| `GET` | `/tasks` | Lista todas | 200 |
+| `POST` | `/tasks/{id}/complete` | Conclui atendimento | 200, 404, 409 |
+| `GET` | `/queue` | Fila elegível, ordenada | 200 |
+| `GET` | `/queue/next` | Próximo (sem alterar) | 200, 404 |
+| `POST` | `/queue/claim` | Chama o próximo | 200, 404 |
 
 Exemplo `POST /tasks`:
 
@@ -94,15 +100,17 @@ Exemplo `POST /tasks`:
 {
   "description": "Atender cliente do caixa 3",
   "priority": "HIGH",
-  "scheduledFor": "2026-04-02T15:00:00"
+  "scheduledFor": "2026-12-02T15:00:00"
 }
 ```
 
 (`scheduledFor` opcional; se informado, deve ser futuro na criação.)
 
-### Próximos passos (roadmap)
+### Roadmap
 
-- Locks no `claim` para vários atendentes
-- Cancelar / re-enfileirar
-- Flyway/Liquibase no `prod` em vez de `ddl-auto=update`
-- Testes de integração adicionais e scan de dependências
+- [ ] Lock no `claim` para vários atendentes simultâneos
+- [ ] Ordenação e filtro da fila no banco (em vez de em memória)
+- [ ] Datas com fuso horário (`Instant`/`OffsetDateTime`)
+- [ ] Aging: prioridade sobe com o tempo de espera (evita starvation)
+- [ ] Cancelar / re-enfileirar / status `ERROR`
+- [ ] Flyway no `prod` em vez de `ddl-auto=update`
