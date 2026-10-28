@@ -8,24 +8,27 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
+import java.time.Clock;  
 import java.util.List;
 
 @Service
 public class TaskService {
 
     private final TaskRepository repository;
+    private final Clock clock;
 
-    public TaskService(TaskRepository repository) {
+    public TaskService(TaskRepository repository, Clock clock) {
         this.repository = repository;
+        this.clock = clock;
     }
 
-    public Task createTask(String description, Priority priority, LocalDateTime scheduledFor) {
+    public Task createTask(String description, Priority priority, Instant scheduledFor) {
         Task task = Task.builder()
                 .description(description)
                 .priority(priority)
                 .status(Status.PENDING)
-                .createdAt(LocalDateTime.now())
+                .createdAt(Instant.now(clock))
                 .scheduledFor(scheduledFor)
                 .build();
 
@@ -49,7 +52,7 @@ public class TaskService {
                     "Only tasks in PROCESSING can be completed; current status: " + task.getStatus());
         }
         task.setStatus(Status.DONE);
-        task.setProcessedAt(LocalDateTime.now());
+        task.setProcessedAt(Instant.now(clock));
         return repository.save(task);
     }
 }

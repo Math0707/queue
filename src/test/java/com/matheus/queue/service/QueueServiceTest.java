@@ -11,7 +11,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
+import java.time.Clock;
+import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 
@@ -27,16 +30,20 @@ class QueueServiceTest {
     @Mock
     private TaskRepository repository;
 
+    private static final Instant NOW = Instant.parse("2026-11-03T18:00:00Z");
+    
+    private final Clock clock = Clock.fixed(NOW, ZoneOffset.UTC);
+    private final Instant base = NOW.minus(1, ChronoUnit.HOURS);
+
     private QueueService service;
 
-    private final LocalDateTime base = LocalDateTime.now().minusHours(1);
 
     @BeforeEach
     void setUp() {
-        service = new QueueService(repository);
+        service = new QueueService(repository, clock);
     }
 
-    private static Task pending(long id, Priority priority, LocalDateTime createdAt, LocalDateTime scheduledFor) {
+    private static Task pending(long id, Priority priority, Instant createdAt, Instant scheduledFor) {
         return Task.builder()
                 .id(id)
                 .description("task " + id)
@@ -47,7 +54,7 @@ class QueueServiceTest {
                 .build();
     }
 
-    private static Task pending(long id, Priority priority, LocalDateTime createdAt) {
+    private static Task pending(long id, Priority priority, Instant createdAt) {
         return pending(id, priority, createdAt, null);
     }
 
@@ -56,9 +63,9 @@ class QueueServiceTest {
     void listPendingOrdered_ordersByPriorityThenArrival() {
         when(repository.findByStatus(Status.PENDING)).thenReturn(List.of(
                 pending(1, Priority.LOW, base),
-                pending(2, Priority.HIGH, base.plusMinutes(2)),
-                pending(3, Priority.MEDIUM, base.plusMinutes(1)),
-                pending(4, Priority.HIGH, base.plusMinutes(1))
+                pending(2, Priority.HIGH, base.plus(2, ChronoUnit.HOURS)),
+                pending(3, Priority.MEDIUM, base.plus(1, ChronoUnit.MINUTES)),
+                pending(4, Priority.HIGH, base.plus(1, ChronoUnit.MINUTES))
         ));
 
         List<Task> result = service.listPendingOrdered();
@@ -69,10 +76,9 @@ class QueueServiceTest {
     @Test
     @DisplayName("Agendamento no futuro fica fora da fila; agendamento vencido entra")
     void listPendingOrdered_respectsSchedule() {
-        LocalDateTime now = LocalDateTime.now();
         when(repository.findByStatus(Status.PENDING)).thenReturn(List.of(
-                pending(1, Priority.HIGH, base, now.plusHours(1)),
-                pending(2, Priority.LOW, base, now.minusMinutes(1)),
+                pending(1, Priority.HIGH, base, NOW.plus(1, ChronoUnit.HOURS)),
+                pending(2, Priority.LOW, base, NOW.minus(1, ChronoUnit.MINUTES)),
                 pending(3, Priority.MEDIUM, base)
         ));
 
@@ -86,7 +92,7 @@ class QueueServiceTest {
     void peekNext_returnsHighestWithoutSaving() {
         when(repository.findByStatus(Status.PENDING)).thenReturn(List.of(
                 pending(1, Priority.MEDIUM, base),
-                pending(2, Priority.HIGH, base.plusMinutes(5))
+                pending(2, Priority.HIGH, base.plus(5, ChronoUnit.MINUTES))
         ));
 
         Optional<Task> next = service.peekNext();
@@ -132,7 +138,7 @@ class QueueServiceTest {
     @DisplayName("Só agendados para o futuro: ninguém pode ser chamado")
     void claimNext_onlyFutureScheduled() {
         when(repository.findByStatus(Status.PENDING)).thenReturn(List.of(
-                pending(1, Priority.HIGH, base, LocalDateTime.now().plusDays(1))));
+                pending(1, Priority.HIGH, base, NOW.plus(1, ChronoUnit.DAYS))));
 
         assertThat(service.claimNext()).isEmpty();
         verify(repository, never()).save(any());

@@ -15,7 +15,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
+import java.time.Clock;
+import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -31,11 +34,16 @@ class TaskServiceTest {
     @Mock
     private TaskRepository repository;
 
+    private static final Instant NOW = Instant.parse("2026-11-03T18:00:00Z");
+
+    private final Clock clock = Clock.fixed(NOW, ZoneOffset.UTC);
+    private final Instant base = NOW.minus(1, ChronoUnit.HOURS);
+
     private TaskService service;
 
     @BeforeEach
     void setUp() {
-        service = new TaskService(repository);
+        service = new TaskService(repository, clock);
     }
 
     private static Task withStatus(long id, Status status) {
@@ -44,7 +52,7 @@ class TaskServiceTest {
                 .description("task " + id)
                 .priority(Priority.MEDIUM)
                 .status(status)
-                .createdAt(LocalDateTime.now().minusMinutes(10))
+                .createdAt(NOW.minus(10, ChronoUnit.MINUTES))
                 .build();
     }
 
@@ -52,9 +60,8 @@ class TaskServiceTest {
     @DisplayName("Nova solicitação nasce PENDING, com data de criação e sem data de conclusão")
     void createTask_startsPending() {
         when(repository.save(any(Task.class))).thenAnswer(inv -> inv.getArgument(0));
-        LocalDateTime scheduled = LocalDateTime.now().plusHours(2);
-        LocalDateTime before = LocalDateTime.now();
-
+        Instant scheduled = NOW.plus(2, ChronoUnit.HOURS);
+        Instant before = NOW;
         Task created = service.createTask("Maria — consulta", Priority.HIGH, scheduled);
 
         assertThat(created.getDescription()).isEqualTo("Maria — consulta");

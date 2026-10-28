@@ -6,7 +6,7 @@ import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Schema(name = "NovaSolicitacao", description = "Dados para a pessoa ou o pedido entrar na fila")
 public record CreateTaskRequest(
@@ -23,6 +23,6 @@ public record CreateTaskRequest(
                 example = "2026-04-02T15:00:00",
                 nullable = true)
         @Future
-        LocalDateTime scheduledFor
+        Instant scheduledFor
 ) {}
 

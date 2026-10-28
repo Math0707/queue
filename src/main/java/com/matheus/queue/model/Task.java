@@ -3,7 +3,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Entity
 @Getter
@@ -31,14 +31,14 @@ public class Task {
     private Status status;
 
     @Schema(description = "Momento em que entrou no sistema")
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 
     @Schema(description = "Momento em que foi concluído", nullable = true)
-    private LocalDateTime processedAt;
+    private Instant processedAt;
 
     @Schema(
             description = "Se preenchido, só entra na fila de chamada a partir deste horário",
             nullable = true)
-    private LocalDateTime scheduledFor;
+    private Instant scheduledFor;
 
 }

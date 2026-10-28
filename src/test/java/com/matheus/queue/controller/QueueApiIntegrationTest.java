@@ -12,9 +12,12 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
+import java.time.Instant;
+import java.time.Clock;
+import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
+import java.time.format.DateTimeFormatter;
+
 
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.notNullValue;
@@ -35,6 +38,7 @@ class QueueApiIntegrationTest {
 
     @Autowired
     private TaskRepository repository;
+    
 
     @BeforeEach
     void cleanDatabase() {
@@ -53,8 +57,8 @@ class QueueApiIntegrationTest {
                 """.formatted(description, priority));
     }
 
-    private static String iso(LocalDateTime dt) {
-        return DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(dt.truncatedTo(ChronoUnit.SECONDS));
+    private static String iso(Instant instant) {
+        return instant.truncatedTo(ChronoUnit.SECONDS).toString();
     }
 
     @Test
@@ -105,7 +109,7 @@ class QueueApiIntegrationTest {
     void scheduledTaskStaysOutOfQueue() throws Exception {
         createTask("""
                 {"description": "Carlos - retorno", "priority": "HIGH", "scheduledFor": "%s"}
-                """.formatted(iso(LocalDateTime.now().plusDays(1))))
+                """.formatted(iso(Instant.now().plus(1, ChronoUnit.DAYS))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.scheduledFor").value(notNullValue()));
 
@@ -142,7 +146,7 @@ class QueueApiIntegrationTest {
     void validation_pastSchedule() throws Exception {
         createTask("""
                 {"description": "Diego", "priority": "LOW", "scheduledFor": "%s"}
-                """.formatted(iso(LocalDateTime.now().minusDays(1))))
+                """.formatted(iso(Instant.now().minus(1, ChronoUnit.DAYS))))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.errors.scheduledFor").exists());
     }
