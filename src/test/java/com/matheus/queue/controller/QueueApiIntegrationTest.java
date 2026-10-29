@@ -104,6 +104,23 @@ class QueueApiIntegrationTest {
         mvc.perform(get("/tasks")).andExpect(jsonPath("$", hasSize(2)));
     }
 
+
+@Test
+@DisplayName("Horário com offset de Brasília é convertido para UTC")
+void createTask_scheduledWithOffset_convertsToUtc() throws Exception {
+    Instant alvo = Instant.now().plus(2, ChronoUnit.HOURS).truncatedTo(ChronoUnit.SECONDS);              // (A) agora + 2 horas, truncado em segundos
+
+    String comOffset = alvo.atOffset(ZoneOffset.ofHours(-3)).toString();          // (B) o alvo escrito no fuso -03:00
+
+    createTask("""
+            {"description": "Gabi", "priority": "LOW", "scheduledFor": "%s"}
+            """.formatted(comOffset))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.scheduledFor").value(alvo.toString()));   // (C)
+
+    mvc.perform(get("/queue")).andExpect(jsonPath("$", hasSize(0)));                  // (D)
+}
+
     @Test
     @DisplayName("Agendado para o futuro aparece em /tasks, mas não na fila nem no claim")
     void scheduledTaskStaysOutOfQueue() throws Exception {
