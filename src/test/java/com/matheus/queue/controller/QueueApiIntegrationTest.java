@@ -13,11 +13,9 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 
 import java.time.Instant;
-import java.time.Clock;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.time.format.DateTimeFormatter;
-
 
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.notNullValue;
@@ -38,7 +36,6 @@ class QueueApiIntegrationTest {
 
     @Autowired
     private TaskRepository repository;
-    
 
     @BeforeEach
     void cleanDatabase() {
@@ -104,22 +101,22 @@ class QueueApiIntegrationTest {
         mvc.perform(get("/tasks")).andExpect(jsonPath("$", hasSize(2)));
     }
 
+    @Test
+    @DisplayName("Horário com offset de Brasília é convertido para UTC")
+    void createTask_scheduledWithOffset_convertsToUtc() throws Exception {
+        Instant alvo = Instant.now().plus(2, ChronoUnit.HOURS).truncatedTo(ChronoUnit.SECONDS);
 
-@Test
-@DisplayName("Horário com offset de Brasília é convertido para UTC")
-void createTask_scheduledWithOffset_convertsToUtc() throws Exception {
-    Instant alvo = Instant.now().plus(2, ChronoUnit.HOURS).truncatedTo(ChronoUnit.SECONDS);              // (A) agora + 2 horas, truncado em segundos
+        String comOffset = DateTimeFormatter.ISO_OFFSET_DATE_TIME
+                .format(alvo.atOffset(ZoneOffset.ofHours(-3)));
 
-    String comOffset = alvo.atOffset(ZoneOffset.ofHours(-3)).toString();          // (B) o alvo escrito no fuso -03:00
+        createTask("""
+                {"description": "Gabi", "priority": "LOW", "scheduledFor": "%s"}
+                """.formatted(comOffset))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.scheduledFor").value(alvo.toString()));
 
-    createTask("""
-            {"description": "Gabi", "priority": "LOW", "scheduledFor": "%s"}
-            """.formatted(comOffset))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.scheduledFor").value(alvo.toString()));   // (C)
-
-    mvc.perform(get("/queue")).andExpect(jsonPath("$", hasSize(0)));                  // (D)
-}
+        mvc.perform(get("/queue")).andExpect(jsonPath("$", hasSize(0)));
+    }
 
     @Test
     @DisplayName("Agendado para o futuro aparece em /tasks, mas não na fila nem no claim")
