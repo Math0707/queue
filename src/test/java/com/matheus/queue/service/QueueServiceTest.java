@@ -87,6 +87,21 @@ class QueueServiceTest {
         assertThat(result).extracting(Task::getId).containsExactly(3L, 2L);
     }
 
+
+    @Test
+    @DisplayName("Agendamento para exatamente agora já entra na fila")
+    void listPendingOrdered_scheduledExactlyNow_isEligible() {
+        when(repository.findByStatus(Status.PENDING)).thenReturn(List.of(
+                pending(1, Priority.MEDIUM, base, NOW)
+        ));
+
+        List<Task> result = service.listPendingOrdered();
+
+        assertThat(result).extracting(Task::getId).containsExactly(1L);
+    }
+
+
+
     @Test
     @DisplayName("Próximo da fila é o de maior prioridade e só olhar não altera nada")
     void peekNext_returnsHighestWithoutSaving() {
