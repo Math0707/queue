@@ -166,6 +166,17 @@ class QueueApiIntegrationTest {
     }
 
     @Test
+    @DisplayName("Agendamento sem fuso horário: 400")
+    void validation_scheduleWithoutTimezone() throws Exception {
+        createTask("""
+                {"description": "Ana", "priority": "MEDIUM", "scheduledFor": "2026-12-02T15:00:00"}
+                """)
+                .andExpect(status().isBadRequest());
+
+        mvc.perform(get("/tasks")).andExpect(jsonPath("$", hasSize(0)));
+    }
+
+    @Test
     @DisplayName("Prioridade inexistente: 400")
     void validation_unknownPriority() throws Exception {
         createTask("Elisa", "URGENT").andExpect(status().isBadRequest());
