@@ -104,7 +104,8 @@ Exemplo `POST /tasks`:
 }
 ```
 
-(`scheduledFor` a data precisa ter fuso horário.)
+(`scheduledFor` é opcional; se informado, deve ser futuro e ter fuso, com `Z` ou offset como `-03:00`.)
+
 
 ### Roadmap
 
