@@ -31,18 +31,13 @@ Sempre use `clean` antes de confiar no resultado. Sem ele, o Maven pode reaprove
 - `priority` é salva como STRING: `ORDER BY` no banco daria ordem alfabética.
 - CI: `./mvnw verify` em push na main e em PRs.
 
-## Pendências da branch fix/timezone (remover após o merge)
-- [ ] Adicionar `spring.jpa.properties.hibernate.jdbc.time_zone=UTC`
-- [ ] Teste: data sem fuso retorna 400
-- [ ] `panel.js`: `body.scheduledFor = new Date(dt).toISOString();`
-- [ ] Atualizar descrição e exemplo do Swagger em `CreateTaskRequest`
-- [ ] Testar manualmente no H2 e no Docker/Postgres
-- [ ] README: exemplo `2026-12-02T18:00:00Z` e item de fuso no roadmap
-- [ ] Push, PR, CI verde e merge
-
 ## Roadmap
-1. Claim concorrente: dois atendentes podem pegar a mesma task. Resolver com lock pessimista (`FOR UPDATE SKIP LOCKED`) ou otimista (`@Version`), com teste que prove que não há duplicidade.
-2. Mover filtro e ordenação da fila para o banco (hoje carrega todos os PENDING em memória).
-3. Aging: prioridade sobe com o tempo de espera, evitando starvation de LOW.
-4. Cancelar, re-enfileirar e usar status ERROR; campo `claimedAt` para métricas de espera e atendimento.
-5. DTO de saída (hoje a entidade é exposta), mensagens de erro em português e consistentes, Flyway no prod em vez de `ddl-auto=update`.
+O escopo é um projeto de portfólio para volume pequeno: login e alta escala ficam de fora.
+
+0. Fuso horário com `Instant` e `Clock`: concluído no PR #1. Faltou validar no PostgreSQL.
+1. CI com PostgreSQL (branch `ci/postgres`): job no GitHub Actions com `services: postgres`, rodando os testes com `SPRING_PROFILES_ACTIVE=prod`.
+2. Claim concorrente: dois atendentes podem pegar a mesma task. Resolver com lock pessimista (`FOR UPDATE SKIP LOCKED`) ou otimista (`@Version`), com teste que prove que não há duplicidade.
+3. Mover filtro e ordenação da fila para o banco (hoje carrega todos os PENDING em memória).
+4. Aging: prioridade sobe com o tempo de espera, evitando starvation de LOW.
+5. Cancelar, re-enfileirar e usar status ERROR; campo `claimedAt` para métricas de espera e atendimento.
+6. DTO de saída (hoje a entidade é exposta), mensagens de erro em português e consistentes, Flyway no prod em vez de `ddl-auto=update`.
