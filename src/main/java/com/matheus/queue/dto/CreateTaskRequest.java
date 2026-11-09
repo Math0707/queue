@@ -19,8 +19,9 @@ public record CreateTaskRequest(
         Priority priority,
 
         @Schema(
-                description = "Opcional. Só aparece para atendimento a partir deste horário (data/hora local).",
-                example = "2026-04-02T15:00:00",
+                description = "(`scheduledFor` é opcional; se informado, deve ser futuro e ter fuso, com `Z` ou offset como `-03:00`.)\r\n" + 
+                                                "",
+                example = "2026-12-02T18:00:00Z",
                 nullable = true)
         @Future
         Instant scheduledFor

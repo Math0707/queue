@@ -100,17 +100,17 @@ Exemplo `POST /tasks`:
 {
   "description": "Atender cliente do caixa 3",
   "priority": "HIGH",
-  "scheduledFor": "2026-12-02T15:00:00"
+  "scheduledFor": "2026-12-02T18:00:00Z"
 }
 ```
 
-(`scheduledFor` opcional; se informado, deve ser futuro na criação.)
+(`scheduledFor` a data precisa ter fuso horário.)
 
 ### Roadmap
 
 - [ ] Lock no `claim` para vários atendentes simultâneos
 - [ ] Ordenação e filtro da fila no banco (em vez de em memória)
-- [ ] Datas com fuso horário (`Instant`/`OffsetDateTime`)
+- [x] Datas com fuso horário (`Instant`/`OffsetDateTime`)
 - [ ] Aging: prioridade sobe com o tempo de espera (evita starvation)
 - [ ] Cancelar / re-enfileirar / status `ERROR`
 - [ ] Flyway no `prod` em vez de `ddl-auto=update`
