@@ -20,9 +20,10 @@ public record CreateTaskRequest(
 
         @Schema(
                 description = "(`scheduledFor` é opcional; se informado, deve ser futuro e ter fuso, com `Z` ou offset como `-03:00`.)\r\n" + 
-                                                "",
+                                                "", 
                 example = "2026-12-02T18:00:00Z",
                 nullable = true)
+                //
         @Future
         Instant scheduledFor
 ) {}
