@@ -177,7 +177,7 @@ function init() {
 
     const body = { description: desc, priority };
     if (dt) {
-      body.scheduledFor = dt.length === 16 ? `${dt}:00` : dt;
+      body.scheduledFor = new Date(dt).toISOString();
     }
 
     try {
