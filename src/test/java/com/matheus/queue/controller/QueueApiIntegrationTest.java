@@ -12,9 +12,10 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
+import java.time.format.DateTimeFormatter;
 
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.notNullValue;
@@ -53,8 +54,8 @@ class QueueApiIntegrationTest {
                 """.formatted(description, priority));
     }
 
-    private static String iso(LocalDateTime dt) {
-        return DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(dt.truncatedTo(ChronoUnit.SECONDS));
+    private static String iso(Instant instant) {
+        return instant.truncatedTo(ChronoUnit.SECONDS).toString();
     }
 
     @Test
@@ -101,11 +102,28 @@ class QueueApiIntegrationTest {
     }
 
     @Test
+    @DisplayName("Horário com offset de Brasília é convertido para UTC")
+    void createTask_scheduledWithOffset_convertsToUtc() throws Exception {
+        Instant alvo = Instant.now().plus(2, ChronoUnit.HOURS).truncatedTo(ChronoUnit.SECONDS);
+
+        String comOffset = DateTimeFormatter.ISO_OFFSET_DATE_TIME
+                .format(alvo.atOffset(ZoneOffset.ofHours(-3)));
+
+        createTask("""
+                {"description": "Gabi", "priority": "LOW", "scheduledFor": "%s"}
+                """.formatted(comOffset))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.scheduledFor").value(alvo.toString()));
+
+        mvc.perform(get("/queue")).andExpect(jsonPath("$", hasSize(0)));
+    }
+
+    @Test
     @DisplayName("Agendado para o futuro aparece em /tasks, mas não na fila nem no claim")
     void scheduledTaskStaysOutOfQueue() throws Exception {
         createTask("""
                 {"description": "Carlos - retorno", "priority": "HIGH", "scheduledFor": "%s"}
-                """.formatted(iso(LocalDateTime.now().plusDays(1))))
+                """.formatted(iso(Instant.now().plus(1, ChronoUnit.DAYS))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.scheduledFor").value(notNullValue()));
 
@@ -142,9 +160,20 @@ class QueueApiIntegrationTest {
     void validation_pastSchedule() throws Exception {
         createTask("""
                 {"description": "Diego", "priority": "LOW", "scheduledFor": "%s"}
-                """.formatted(iso(LocalDateTime.now().minusDays(1))))
+                """.formatted(iso(Instant.now().minus(1, ChronoUnit.DAYS))))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.errors.scheduledFor").exists());
+    }
+
+    @Test
+    @DisplayName("Agendamento sem fuso horário: 400")
+    void validation_scheduleWithoutTimezone() throws Exception {
+        createTask("""
+                {"description": "Ana", "priority": "MEDIUM", "scheduledFor": "2026-12-02T15:00:00"}
+                """)
+                .andExpect(status().isBadRequest());
+
+        mvc.perform(get("/tasks")).andExpect(jsonPath("$", hasSize(0)));
     }
 
     @Test

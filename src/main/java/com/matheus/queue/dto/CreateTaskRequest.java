@@ -6,7 +6,7 @@ import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Schema(name = "NovaSolicitacao", description = "Dados para a pessoa ou o pedido entrar na fila")
 public record CreateTaskRequest(
@@ -19,10 +19,10 @@ public record CreateTaskRequest(
         Priority priority,
 
         @Schema(
-                description = "Opcional. Só aparece para atendimento a partir deste horário (data/hora local).",
-                example = "2026-04-02T15:00:00",
+                description = "Opcional. Só aparece para atendimento a partir deste horário. Informe o fuso com Z ou offset (ex.: -03:00).",
+                example = "2026-12-02T18:00:00Z",
                 nullable = true)
         @Future
-        LocalDateTime scheduledFor
+        Instant scheduledFor
 ) {}
 
