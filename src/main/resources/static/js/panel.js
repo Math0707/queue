@@ -209,6 +209,15 @@ function init() {
         showFlash(actionFlash, "err", "Não há ninguém na fila para chamar agora.");
         return;
       }
+      if (res.status === 409) {
+        showFlash(actionFlash, 
+          "err", 
+          "Outro atendente chamou essa pessoa ao mesmo tempo. Clique em Chamar próximo de novo."
+      );
+        refreshQueue();
+        refreshAll();
+        return;
+      }
       if (!res.ok) throw new Error();
       const t = await res.json();
       const plab = PRIORITY_LABEL[t.priority] || t.priority;
