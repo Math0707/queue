@@ -34,8 +34,9 @@ Sempre use `clean` antes de confiar no resultado. Sem ele, o Maven pode reaprove
 ## Roadmap
 O escopo é um projeto de portfólio para volume pequeno: login e alta escala ficam de fora.
 
-0. Fuso horário com `Instant` e `Clock`: concluído no PR #1. Faltou validar no PostgreSQL.
-1. CI com PostgreSQL (branch `ci/postgres`): job no GitHub Actions com `services: postgres`, rodando os testes com `SPRING_PROFILES_ACTIVE=prod`.
+Concluídos: fuso horário com `Instant` e `Clock` (PR #1); CI com job `postgres` (PR #2), validado pelo log: perfil `prod`, PostgreSQL 16 e 25 testes.
+
+1. ~~Fuso horário~~ e ~~CI com PostgreSQL~~ (feitos).
 2. Claim concorrente: dois atendentes podem pegar a mesma task. Resolver com lock pessimista (`FOR UPDATE SKIP LOCKED`) ou otimista (`@Version`), com teste que prove que não há duplicidade.
 3. Mover filtro e ordenação da fila para o banco (hoje carrega todos os PENDING em memória).
 4. Aging: prioridade sobe com o tempo de espera, evitando starvation de LOW.
