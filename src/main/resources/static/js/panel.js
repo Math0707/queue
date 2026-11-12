@@ -209,7 +209,7 @@ function init() {
         showFlash(actionFlash, "err", "Não há ninguém na fila para chamar agora.");
         return;
       }
-       if (res.status === 409) {
+      if (res.status === 409) {
         showFlash(
           actionFlash,
           "err",
