@@ -210,10 +210,11 @@ function init() {
         return;
       }
       if (res.status === 409) {
-        showFlash(actionFlash, 
-          "err", 
+        showFlash(
+          actionFlash,
+          "err",
           "Outro atendente chamou essa pessoa ao mesmo tempo. Clique em Chamar próximo de novo."
-      );
+        );
         refreshQueue();
         refreshAll();
         return;

@@ -30,15 +30,17 @@ Sempre use `clean` antes de confiar no resultado. Sem ele, o Maven pode reaprove
 - Perfis: `dev` (H2, padrão) e `prod` (PostgreSQL).
 - `priority` é salva como STRING: `ORDER BY` no banco daria ordem alfabética.
 - CI: `./mvnw verify` em push na main e em PRs.
+- Claim concorrente: lock otimista com `@Version` em `Task`; a cópia desatualizada gera `ObjectOptimisticLockingFailureException`, convertida em 409.
 
 ## Roadmap
 O escopo é um projeto de portfólio para volume pequeno: login e alta escala ficam de fora.
 
-Concluídos: fuso horário com `Instant` e `Clock` (PR #1); CI com job `postgres` (PR #2), validado pelo log: perfil `prod`, PostgreSQL 16 e 25 testes.
+Concluídos: fuso horário com `Instant` e `Clock` (PR #1); CI com job `postgres` (PR #2); claim concorrente com `@Version` e 409 (PR #3).
 
-1. ~~Fuso horário~~ e ~~CI com PostgreSQL~~ (feitos).
-2. Claim concorrente: dois atendentes podem pegar a mesma task. Resolver com lock pessimista (`FOR UPDATE SKIP LOCKED`) ou otimista (`@Version`), com teste que prove que não há duplicidade.
-3. Mover filtro e ordenação da fila para o banco (hoje carrega todos os PENDING em memória).
-4. Aging: prioridade sobe com o tempo de espera, evitando starvation de LOW.
-5. Cancelar, re-enfileirar e usar status ERROR; campo `claimedAt` para métricas de espera e atendimento.
-6. DTO de saída (hoje a entidade é exposta), mensagens de erro em português e consistentes, Flyway no prod em vez de `ddl-auto=update`.
+Para fechar o projeto:
+1. Cancelar e devolver para a fila.
+2. DTO de saída e mensagens de erro consistentes em português.
+3. Flyway no `prod` em vez de `ddl-auto=update`.
+4. README final em pt-br, com print do painel, decisões e limitações conhecidas; versão em inglês (`README.en.md`) por último.
+
+Fora do escopo (citar no README como próximos passos): fila filtrada e ordenada no banco, aging contra starvation de LOW.
