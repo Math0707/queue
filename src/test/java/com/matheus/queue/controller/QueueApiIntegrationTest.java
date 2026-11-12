@@ -9,8 +9,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
+import com.matheus.queue.model.Priority;
+import com.matheus.queue.model.Status;
+import com.matheus.queue.model.Task;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+
 
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -196,5 +203,28 @@ class QueueApiIntegrationTest {
     @DisplayName("Concluir chamado inexistente: 404")
     void complete_unknownTask_notFound() throws Exception {
         mvc.perform(post("/tasks/{id}/complete", 999_999)).andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("Dois atendentes salvando a mesma task: o segundo recebe conflito")
+    void staleVersion_isRejected() {
+           Task saved = repository.save(Task.builder()
+                .description("Maria")
+                .priority(Priority.MEDIUM)
+                .status(Status.PENDING)
+                .createdAt(Instant.now())
+                .build());
+        Long id = saved.getId();
+
+        Task a = repository.findById(id).orElseThrow();
+        Task b = repository.findById(id).orElseThrow();
+
+        a.setStatus(Status.PROCESSING);
+        repository.save(a);
+
+        b.setStatus(Status.PROCESSING);
+        assertThatThrownBy(() -> repository.save(b))
+                .isInstanceOf(ObjectOptimisticLockingFailureException.class);
+
     }
 }

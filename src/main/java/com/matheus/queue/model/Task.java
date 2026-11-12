@@ -41,4 +41,7 @@ public class Task {
             nullable = true)
     private Instant scheduledFor;
 
+    @Version
+    @Schema(description = "Controle de concorrência: aumenta a cada atualização")
+    private Long version;
 }
