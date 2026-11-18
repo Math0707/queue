@@ -39,6 +39,8 @@ public class TaskService {
         return repository.findAll();
     }
 
+
+
     public Task getById(Long id) {
         return repository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Task not found"));
@@ -49,10 +51,31 @@ public class TaskService {
         if (task.getStatus() != Status.PROCESSING) {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT,
-                    "Only tasks in PROCESSING can be completed; current status: " + task.getStatus());
+                    "Apenas atendimentos em PROCESSING podem ser concluídas; status atual: " + task.getStatus());
         }
         task.setStatus(Status.DONE);
         task.setProcessedAt(Instant.now(clock));
+        return repository.save(task);
+    }
+
+    public Task cancelTask(Long id) {
+        Task task = getById(id);
+        if (task.getStatus() != Status.PENDING) {
+
+            String mensagem = switch (task.getStatus()) {
+
+            case PROCESSING -> 	"Não é possível cancelar: a pessoa já está em atendimento.";
+            case DONE -> "Não é possível cancelar: o atendimento já foi concluído.";
+            case CANCELLED -> "Atendimento cancelado";
+
+            default -> "Status desconhecido";
+           };
+
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    mensagem + " - Status atual: " + task.getStatus());          
+        }
+        task.setStatus(Status.CANCELLED);
         return repository.save(task);
     }
 }

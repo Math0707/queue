@@ -6,6 +6,7 @@ import com.matheus.queue.service.TaskService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import jakarta.validation.Valid;
+import java.net.URI;
 import java.util.List;
 
 @RestController
@@ -29,8 +31,11 @@ public class TaskController {
 
     @Operation(summary = "Incluir na fila", description = "Registra um novo pedido (fica aguardando ou agendado).")
     @PostMapping
-    public Task create(@Valid @RequestBody CreateTaskRequest request){
-        return service.createTask(request.description(), request.priority(), request.scheduledFor());
+    public ResponseEntity<Task> create(@Valid @RequestBody CreateTaskRequest request){
+        Task created = service.createTask(request.description(), request.priority(), request.scheduledFor());
+        return ResponseEntity
+                .created(URI.create("/tasks/" + created.getId()))
+                .body(created);
     }
 
     @Operation(summary = "Ver tudo", description = "Lista todas as solicitações em qualquer situação (inclui agendadas para depois).")
@@ -44,5 +49,12 @@ public class TaskController {
     public Task complete(
             @Parameter(description = "Número do chamado", example = "1") @PathVariable Long id) {
         return service.completeTask(id);
+    }
+
+    @Operation(summary = "Cancelar pedido", description = "Cancela um pedido que ainda está aguardando ser chamado")
+    @PostMapping("/{id}/cancel")
+    public Task cancel(
+            @Parameter(description = "Número do chamado", example = "1") @PathVariable Long id) {
+        return service.cancelTask(id);
     }
 }

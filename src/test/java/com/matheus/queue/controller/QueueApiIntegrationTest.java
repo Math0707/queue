@@ -25,10 +25,12 @@ import java.time.temporal.ChronoUnit;
 import java.time.format.DateTimeFormatter;
 
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.matchesPattern;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
@@ -68,10 +70,11 @@ class QueueApiIntegrationTest {
     @Test
     @DisplayName("Fluxo completo: criar → fila ordenada → chamar → concluir")
     void fullFlow() throws Exception {
-        createTask("Ana - baixa", "LOW").andExpect(status().isOk())
+        createTask("Ana - baixa", "LOW").andExpect(status().isCreated())
+                .andExpect(header().string("Location", matchesPattern("/tasks/\\d+")))
                 .andExpect(jsonPath("$.status").value("PENDING"))
                 .andExpect(jsonPath("$.id").value(notNullValue()));
-        createTask("Bruno - alta", "HIGH").andExpect(status().isOk());
+        createTask("Bruno - alta", "HIGH").andExpect(status().isCreated());
 
         mvc.perform(get("/queue"))
                 .andExpect(status().isOk())
@@ -119,7 +122,7 @@ class QueueApiIntegrationTest {
         createTask("""
                 {"description": "Gabi", "priority": "LOW", "scheduledFor": "%s"}
                 """.formatted(comOffset))
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.scheduledFor").value(alvo.toString()));
 
         mvc.perform(get("/queue")).andExpect(jsonPath("$", hasSize(0)));
@@ -131,7 +134,7 @@ class QueueApiIntegrationTest {
         createTask("""
                 {"description": "Carlos - retorno", "priority": "HIGH", "scheduledFor": "%s"}
                 """.formatted(iso(Instant.now().plus(1, ChronoUnit.DAYS))))
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.scheduledFor").value(notNullValue()));
 
         mvc.perform(get("/tasks")).andExpect(jsonPath("$", hasSize(1)));
