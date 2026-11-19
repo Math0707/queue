@@ -10,6 +10,6 @@ public enum Status {
     PROCESSING,
     @Schema(description = "Finalizado com sucesso")
     DONE,
-    @Schema(description = "Algo deu errado")
-    ERROR
+    @Schema(description = "Cancelado antes do atendimento")
+    CANCELLED
 }

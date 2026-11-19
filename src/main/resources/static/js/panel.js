@@ -3,7 +3,7 @@ const STATUS_LABEL = {
   PENDING: "Aguardando",
   PROCESSING: "Em atendimento",
   DONE: "Concluído",
-  ERROR: "Erro",
+  CANCELLED: "Cancelado",
 };
 
 function priorityClass(p) {
@@ -16,6 +16,7 @@ function statusClass(s) {
   if (s === "PENDING") return "chip--aguardando";
   if (s === "PROCESSING") return "chip--atendendo";
   if (s === "DONE") return "chip--ok";
+  if (s === "CANCELLED") return "chip--cancelado";
   return "";
 }
 

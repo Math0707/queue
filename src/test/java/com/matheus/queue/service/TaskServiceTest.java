@@ -86,12 +86,25 @@ class TaskServiceTest {
     }
 
     @ParameterizedTest(name = "status {0} não pode ser concluído")
-    @EnumSource(value = Status.class, names = {"PENDING", "DONE", "ERROR"})
+    @EnumSource(value = Status.class, names = {"PENDING", "DONE", "CANCELLED"})
     @DisplayName("Concluir quem não está em atendimento devolve 409 e não salva")
     void completeTask_invalidStatus(Status status) {
         when(repository.findById(1L)).thenReturn(Optional.of(withStatus(1, status)));
 
         assertThatThrownBy(() -> service.completeTask(1L))
+                .isInstanceOf(ResponseStatusException.class)
+                .extracting(e -> ((ResponseStatusException) e).getStatusCode())
+                .isEqualTo(HttpStatus.CONFLICT);
+        verify(repository, never()).save(any());
+    }
+    
+    @ParameterizedTest(name = "status {0} não pode ser cancelado")
+    @EnumSource(value = Status.class, names = {"PROCESSING", "DONE", "CANCELLED"})
+    @DisplayName("Cancelar quem não está PENDING devolve 409 e não salva")
+    void cancelTask_invalidStatus(Status status) {
+        when(repository.findById(1L)).thenReturn(Optional.of(withStatus(1, status)));
+
+        assertThatThrownBy(() -> service.cancelTask(1L))
                 .isInstanceOf(ResponseStatusException.class)
                 .extracting(e -> ((ResponseStatusException) e).getStatusCode())
                 .isEqualTo(HttpStatus.CONFLICT);
@@ -107,5 +120,18 @@ class TaskServiceTest {
                 .isInstanceOf(ResponseStatusException.class)
                 .extracting(e -> ((ResponseStatusException) e).getStatusCode())
                 .isEqualTo(HttpStatus.NOT_FOUND);
+    }
+
+    @Test
+    @DisplayName("Cancelar quem está PENDING: vira CANCELLED sem data de atendimento")
+    void cancelTask_pending() {
+        Task task = withStatus(1, Status.PENDING);
+        when(repository.findById(1L)).thenReturn(Optional.of(task));
+        when(repository.save(any(Task.class))).thenAnswer(inv -> inv.getArgument(0));
+        
+        Task cancelled = service.cancelTask(1L);
+
+        assertThat(cancelled.getStatus()).isEqualTo(Status.CANCELLED);
+        assertThat(cancelled.getProcessedAt()).isNull();
     }
 }
