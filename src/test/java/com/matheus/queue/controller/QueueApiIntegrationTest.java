@@ -203,9 +203,28 @@ class QueueApiIntegrationTest {
     }
 
     @Test
+    @DisplayName("Cancelar quem está aguardando: vira CANCELLED e sai da fila")
+    void cancel_pendingTask() throws Exception {
+        String body = createTask("Carlos", "MEDIUM")
+                .andReturn().getResponse().getContentAsString();
+        int id = JsonPath.read(body, "$.id");
+
+        mvc.perform(post("/tasks/{id}/cancel", id))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("CANCELLED"));
+        mvc.perform(get("/queue")).andExpect(status().isOk()).andExpect(jsonPath("$", hasSize(0)));        
+    }
+
+    @Test
     @DisplayName("Concluir chamado inexistente: 404")
     void complete_unknownTask_notFound() throws Exception {
         mvc.perform(post("/tasks/{id}/complete", 999_999)).andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("Cancelar chamado inexistente: 404")
+    void cancel_unknownTask_notFound() throws Exception {
+        mvc.perform(post("/tasks/{id}/cancel", 999_999)).andExpect(status().isNotFound());
     }
 
     @Test
