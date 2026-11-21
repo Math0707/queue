@@ -133,5 +133,6 @@ class TaskServiceTest {
 
         assertThat(cancelled.getStatus()).isEqualTo(Status.CANCELLED);
         assertThat(cancelled.getProcessedAt()).isNull();
+        verify(repository).save(task);
     }
 }
