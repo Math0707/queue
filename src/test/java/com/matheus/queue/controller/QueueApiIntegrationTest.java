@@ -1,4 +1,3 @@
-
 package com.matheus.queue.controller;
 
 import com.jayway.jsonpath.JsonPath;
@@ -32,9 +31,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/**
- * Sobe a aplicação inteira (perfil dev, H2 em memória) e testa a API via HTTP.
- */
 @SpringBootTest
 @AutoConfigureMockMvc
 class QueueApiIntegrationTest {
