@@ -1,3 +1,4 @@
+
 package com.matheus.queue.controller;
 
 import com.jayway.jsonpath.JsonPath;
@@ -16,8 +17,6 @@ import com.matheus.queue.model.Priority;
 import com.matheus.queue.model.Status;
 import com.matheus.queue.model.Task;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-
-
 
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -203,6 +202,20 @@ class QueueApiIntegrationTest {
     }
 
     @Test
+    @DisplayName("Cancelar quem já está em atendimento: 409 com o motivo")
+    void cancel_processingTask_conflict() throws Exception {
+        createTask("Helena", "MEDIUM");
+        String claimed = mvc.perform(post("/queue/claim"))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        int id = JsonPath.read(claimed, "$.id");
+
+        mvc.perform(post("/tasks/{id}/cancel", id))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.detail").value("Não é possível cancelar: a pessoa já está em atendimento."));
+    }
+
+    @Test
     @DisplayName("Cancelar quem está aguardando: vira CANCELLED e sai da fila")
     void cancel_pendingTask() throws Exception {
         String body = createTask("Carlos", "MEDIUM")
@@ -212,7 +225,7 @@ class QueueApiIntegrationTest {
         mvc.perform(post("/tasks/{id}/cancel", id))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("CANCELLED"));
-        mvc.perform(get("/queue")).andExpect(status().isOk()).andExpect(jsonPath("$", hasSize(0)));        
+        mvc.perform(get("/queue")).andExpect(status().isOk()).andExpect(jsonPath("$", hasSize(0)));
     }
 
     @Test

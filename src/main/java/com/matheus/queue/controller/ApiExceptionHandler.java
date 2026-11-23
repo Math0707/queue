@@ -7,6 +7,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -34,6 +35,11 @@ public class ApiExceptionHandler {
                 "Esta pessoa acabou de ser chamada por outro atendente. Chame o próximo de novo.");
         problem.setTitle("Conflito de atendimento");
         return problem;
+    }
+
+    @ExceptionHandler(ResponseStatusException.class)
+    ProblemDetail handleResponseStatus(ResponseStatusException ex) {
+        return ProblemDetail.forStatusAndDetail(ex.getStatusCode(), ex.getReason());
     }
 }
 
