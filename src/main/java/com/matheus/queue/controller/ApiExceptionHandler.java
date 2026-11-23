@@ -29,10 +29,10 @@ public class ApiExceptionHandler {
     }
 
     @ExceptionHandler(ObjectOptimisticLockingFailureException.class)
-    ProblemDetail handleConcurrentClaim(ObjectOptimisticLockingFailureException ex) {
+    ProblemDetail handleConcurrentUpdate(ObjectOptimisticLockingFailureException ex) {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(
                 HttpStatus.CONFLICT,
-                "Esta pessoa acabou de ser chamada por outro atendente. Chame o próximo de novo.");
+                "Este atendimento foi alterado por outra pessoa enquanto você fazia a ação. Atualize a tela e tente de novo.");
         problem.setTitle("Conflito de atendimento");
         return problem;
     }
