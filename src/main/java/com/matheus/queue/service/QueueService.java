@@ -10,16 +10,16 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
-import java.time.Clock;           
+import java.time.Clock;
 import java.time.Instant; 
 
 @Service
 public class QueueService {
 
-    /** Higher priority first; same priority → FIFO (oldest createdAt first). */
+    /** Higher priority first; same priority → FIFO (oldest queuedAt). */
     private static final Comparator<Task> NEXT_TO_SERVE =
             Comparator.comparing((Task t) -> t.getPriority().queueWeight()).reversed()
-                    .thenComparing(Task::getCreatedAt);
+                    .thenComparing(Task::getQueuedAt);
 
     private final TaskRepository repository;
     private final Clock clock;

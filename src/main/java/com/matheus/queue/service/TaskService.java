@@ -29,6 +29,7 @@ public class TaskService {
                 .priority(priority)
                 .status(Status.PENDING)
                 .createdAt(Instant.now(clock))
+                .queuedAt(Instant.now(clock))
                 .scheduledFor(scheduledFor)
                 .build();
 

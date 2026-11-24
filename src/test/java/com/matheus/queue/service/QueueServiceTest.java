@@ -44,7 +44,7 @@ class QueueServiceTest {
     }
 
     private static Task pending(long id, Priority priority, Instant createdAt, Instant scheduledFor) {
-        return Task.builder()
+        return Task.builder(.queuedAt(""))
                 .id(id)
                 .description("task " + id)
                 .priority(priority)
