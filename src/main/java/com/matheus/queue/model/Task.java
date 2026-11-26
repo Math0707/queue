@@ -33,7 +33,7 @@ public class Task {
     @Schema(description = "Momento em que entrou no sistema")
     private Instant createdAt;
 
-    @Schema(description = "Momento em que a task é devolvida para a fila")
+    @Schema(description = "Momento em que entrou na fila pela última vez; define a ordem de chamada e muda ao devolver")
     private Instant queuedAt;
 
     @Schema(description = "Momento em que foi concluído", nullable = true)

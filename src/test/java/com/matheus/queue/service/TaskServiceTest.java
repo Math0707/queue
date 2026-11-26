@@ -35,10 +35,7 @@ class TaskServiceTest {
     private TaskRepository repository;
 
     private static final Instant NOW = Instant.parse("2026-11-03T18:00:00Z");
-
     private final Clock clock = Clock.fixed(NOW, ZoneOffset.UTC);
-    private final Instant base = NOW.minus(1, ChronoUnit.HOURS);
-
     private TaskService service;
 
     @BeforeEach
@@ -47,28 +44,30 @@ class TaskServiceTest {
     }
 
     private static Task withStatus(long id, Status status) {
+        Instant arrivedAt = NOW.minus(10, ChronoUnit.MINUTES);
         return Task.builder()
                 .id(id)
                 .description("task " + id)
                 .priority(Priority.MEDIUM)
                 .status(status)
-                .createdAt(NOW.minus(10, ChronoUnit.MINUTES))
+                .createdAt(arrivedAt)
+                .queuedAt(arrivedAt)
                 .build();
     }
 
     @Test
-    @DisplayName("Nova solicitação nasce PENDING, com data de criação e sem data de conclusão")
+    @DisplayName("Nova solicitação nasce PENDING, com data de criação e de entrada na fila, sem data de conclusão")
     void createTask_startsPending() {
         when(repository.save(any(Task.class))).thenAnswer(inv -> inv.getArgument(0));
         Instant scheduled = NOW.plus(2, ChronoUnit.HOURS);
-        Instant before = NOW;
         Task created = service.createTask("Maria — consulta", Priority.HIGH, scheduled);
 
         assertThat(created.getDescription()).isEqualTo("Maria — consulta");
         assertThat(created.getPriority()).isEqualTo(Priority.HIGH);
         assertThat(created.getStatus()).isEqualTo(Status.PENDING);
         assertThat(created.getScheduledFor()).isEqualTo(scheduled);
-        assertThat(created.getCreatedAt()).isAfterOrEqualTo(before);
+        assertThat(created.getCreatedAt()).isEqualTo(NOW);
+        assertThat(created.getQueuedAt()).isEqualTo(NOW);
         assertThat(created.getProcessedAt()).isNull();
     }
 
@@ -86,7 +85,7 @@ class TaskServiceTest {
     }
 
     @ParameterizedTest(name = "status {0} não pode ser concluído")
-    @EnumSource(value = Status.class, names = {"PENDING", "DONE", "CANCELLED"})
+    @EnumSource(value = Status.class, names = { "PENDING", "DONE", "CANCELLED" })
     @DisplayName("Concluir quem não está em atendimento devolve 409 e não salva")
     void completeTask_invalidStatus(Status status) {
         when(repository.findById(1L)).thenReturn(Optional.of(withStatus(1, status)));
@@ -97,9 +96,9 @@ class TaskServiceTest {
                 .isEqualTo(HttpStatus.CONFLICT);
         verify(repository, never()).save(any());
     }
-    
+
     @ParameterizedTest(name = "status {0} não pode ser cancelado")
-    @EnumSource(value = Status.class, names = {"PROCESSING", "DONE", "CANCELLED"})
+    @EnumSource(value = Status.class, names = { "PROCESSING", "DONE", "CANCELLED" })
     @DisplayName("Cancelar quem não está PENDING devolve 409 e não salva")
     void cancelTask_invalidStatus(Status status) {
         when(repository.findById(1L)).thenReturn(Optional.of(withStatus(1, status)));
@@ -128,7 +127,7 @@ class TaskServiceTest {
         Task task = withStatus(1, Status.PENDING);
         when(repository.findById(1L)).thenReturn(Optional.of(task));
         when(repository.save(any(Task.class))).thenAnswer(inv -> inv.getArgument(0));
-        
+
         Task cancelled = service.cancelTask(1L);
 
         assertThat(cancelled.getStatus()).isEqualTo(Status.CANCELLED);

@@ -24,12 +24,13 @@ public class TaskService {
     }
 
     public Task createTask(String description, Priority priority, Instant scheduledFor) {
+        Instant now = Instant.now(clock);
         Task task = Task.builder()
                 .description(description)
                 .priority(priority)
                 .status(Status.PENDING)
-                .createdAt(Instant.now(clock))
-                .queuedAt(Instant.now(clock))
+                .createdAt(now)
+                .queuedAt(now)
                 .scheduledFor(scheduledFor)
                 .build();
 
